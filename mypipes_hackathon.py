@@ -35,12 +35,15 @@ class get_age(BaseEstimator, TransformerMixin):
 
     def fit(self,x,y=None):
         self.feature_names=x.columns
+        for  col in x.columns:
+            self.median_age=(pd.to_datetime(x[col],errors='coerce').dt.year).median()
         return self
 
     def transform(self,X):
         dummy_data=x.copy()
         for col in X.columns:
-            dummy_data[age]= self.year-pd.DatetimeIndex(dummy_data[col]).year
+            dummy_data[age]= self.year-(dummy_data[col]).dt.year
+            dummy_data[(dummy_data[age]<0 or dummy_data[age]>100) ]=self.median_age
             del dummy_data[col]
         
         return dummy_data
