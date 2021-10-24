@@ -1,11 +1,7 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
 
 import pandas as pd
 import numpy as np
+from datetime import date
 
 from sklearn.pipeline import Pipeline,FeatureUnion
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -30,9 +26,26 @@ class VarSelector(BaseEstimator, TransformerMixin):
 
         return self.feature_names
 
+class get_age(BaseEstimator, TransformerMixin):
+    def __init__(self):
 
-# In[ ]:
+        self.feature_names=[]
+        self.age=0
+        self.year=date.today().year
 
+    def fit(self,x,y=None):
+        self.feature_names=x.columns
+        return self
+
+    def transform(self,X):
+        dummy_data=x.copy()
+        for col in X.columns:
+            dummy_data[age]= self.year-pd.DatetimeIndex(dummy_data[col]).year
+            del dummy_data[col]
+        
+        return dummy_data
+    def get_feature_names(self):
+        return self.feature_names
 
 class convert_to_string(BaseEstimator, TransformerMixin):
 
@@ -51,8 +64,6 @@ class convert_to_string(BaseEstimator, TransformerMixin):
     def get_feature_names(self):
         return self.feature_names
 
-
-# In[ ]:
 
 
 class string_clean(BaseEstimator, TransformerMixin):
@@ -76,9 +87,7 @@ class string_clean(BaseEstimator, TransformerMixin):
     def get_feature_names(self):
 
         return self.feature_names
-
-
-# In[ ]:
+    
 
 
 class get_dummies_Pipe(BaseEstimator, TransformerMixin):
@@ -124,6 +133,77 @@ class get_dummies_Pipe(BaseEstimator, TransformerMixin):
     def get_feature_names(self):
 
         return self.feature_names
+    
+class convert_to_datetime(BaseEstimator,TransformerMixin):
+    
+    def __init__(self):
+        
+        self.feature_names=[]
+        
+    
+    def fit(self,x,y=None):
+
+        self.feature_names=x.columns
+
+        return self 
+    
+    def transform(self,x) :
+
+        for col in x.columns:
+
+            x[col]=pd.to_datetime(x[col],errors='coerce')
+
+        return x
+    
+    def get_feature_names(self) :
+                
+        return self.feature_names
+
+class cyclic_features(BaseEstimator,TransformerMixin):
+
+    def __init__(self):
+
+        self.feature_names=[]
+        self.week_freq=7
+        self.month_freq=12
+        self.month_day_freq=31
+
+    def fit(self,x,y=None):
+
+        for col in x.columns:
+
+            for kind in ['week','month','month_day']:
+
+                self.feature_names.extend([col + '_'+kind+temp for temp in ['_sin','_cos']])
+
+        return self 
+
+    def transform(self,x):
+
+        for col in x.columns:
+            
+            wdays=x[col].dt.dayofweek
+            month=x[col].dt.month
+            day=x[col].dt.day
+
+            x[col+'_'+'week_sin']=np.sin(2*np.pi*wdays/self.week_freq)
+            x[col+'_'+'week_cos']=np.cos(2*np.pi*wdays/self.week_freq)
+
+            x[col+'_'+'month_sin']=np.sin(2*np.pi*month/self.month_freq)
+            x[col+'_'+'month_cos']=np.cos(2*np.pi*month/self.month_freq)
+
+            x[col+'_'+'month_day_sin']=np.sin(2*np.pi*day/self.month_day_freq)
+            x[col+'_'+'month_day_cos']=np.cos(2*np.pi*day/self.month_day_freq)
+
+            del x[col]
+
+        return x
+
+    def get_feature_names(self):
+
+        self.feature_names
+
+
 
 class DataFrameImputer(BaseEstimator,TransformerMixin):
 
@@ -138,9 +218,10 @@ class DataFrameImputer(BaseEstimator,TransformerMixin):
 
         for col in X.columns:
             if X[col].dtype=='O':
-                self.impute_dict[col]='-1'
+                self.impute_dict[col]='missing'
             else:
-                self.impute_dict[col]=-1
+                # initialising non object variables as 0 (assuming numeric fields)
+                self.impute_dict[col]=0
         return self
 
     def transform(self, X, y=None):
